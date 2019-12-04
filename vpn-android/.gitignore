@@ -1,0 +1,12 @@
+build/*
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+
+# Intellij
+*.iml
+.idea
+out/
+obj/local/*
+local.properties

@@ -1,0 +1,12 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.tunnelbear.vpn" >
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application>
+        <service android:name="com.tunnelbear.vpn.PolarVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE" />
+        <service android:name="com.tunnelbear.vpn.VpnRemoteService"
+            android:enabled="true"
+            android:process=":vpnLibProcess" />
+    </application>
+</manifest>

@@ -1,0 +1,142 @@
+//https://github.com/kaedea/publication/blob/develop/gradle/maven-publish.gradle
+// Generate aar and upload to maven repo.
+apply plugin: 'maven-publish'
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.amazonaws:aws-java-sdk-core:1.11.5' // Gradle build dependency, not app dependency
+    }
+}
+
+import com.amazonaws.auth.*
+
+// thanks to Matthieu Vachon and Josh Hickman at https://discuss.gradle.org/t/s3-awscredentials-should-be-able-to-load-from-an-aws-profile-file/8782/9
+def fetchAwsCredentials = {
+    try {
+        return new DefaultAWSCredentialsProviderChain().getCredentials()
+    } catch (Exception e) {
+        println("Unable to get credentials: " + e.getMessage())
+    }
+}
+
+AWSCredentials awsCredentials = fetchAwsCredentials()
+
+publishing {
+    publications {
+
+        debugAar(MavenPublication) {
+            // 1. Config artifact id
+            groupId rootProject.ext.group
+            artifactId rootProject.ext.artifact
+            version = rootProject.ext.version + '-debug'
+            ext.build = 'debug'
+
+            artifact bundleDebug
+        }
+
+        releaseAar(MavenPublication) {
+            // 1. Config artifact ids
+            groupId rootProject.ext.group
+            artifactId rootProject.ext.artifact
+            version = rootProject.ext.version
+            ext.build = 'release'
+
+            // 2. Config archives:
+            // aar, source.jar, javadoc.jar ...
+            artifact bundleRelease
+            artifact androidSourcesJar
+            //artifact androidJavadocsJar
+
+            // generate pom nodes for dependencies
+            pom.withXml {
+                def dependenciesNode = asNode().appendNode('dependencies')
+                configurations.getByName("archives").getAllDependencies().each { dependency ->
+                    if (dependency.group != null && (dependency.name != null || "unspecified".equals(dependency.name)) && dependency.version != null) {
+                        def dependencyNode = dependenciesNode.appendNode('dependency')
+                        dependencyNode.appendNode('artifactId', dependency.name)
+                        dependencyNode.appendNode('version', dependency.version)
+                        dependencyNode.appendNode('groupId', dependency.group)
+
+                        // Exclusions (transitive dependencies of the current dependency)
+                        if (!dependency.transitive) {
+                            // If this dependency is transitive, we should force exclude all its dependencies them from the POM
+                            final exclusionNode = node.appendNode('exclusions').appendNode('exclusion')
+                            exclusionNode.appendNode('groupId', '*')
+                            exclusionNode.appendNode('artifactId', '*')
+                        } else if (!dependency.properties.excludeRules.empty) {
+                            // Otherwise add specified exclude rules
+                            final exclusionNode = node.appendNode('exclusions').appendNode('exclusion')
+                            dependency.properties.excludeRules.each { ExcludeRule rule ->
+                                exclusionNode.appendNode('groupId', rule.group ?: '*')
+                                exclusionNode.appendNode('artifactId', rule.module ?: '*')
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = 'release'
+            url "s3://polarbear-artifacts.s3.amazonaws.com/releases"
+            credentials(AwsCredentials) {
+                if (awsCredentials != null) {
+                    accessKey awsCredentials.getAWSAccessKeyId()
+                    secretKey awsCredentials.getAWSSecretKey()
+                }
+            }
+        }
+
+        mavenLocal()
+    }
+}
+
+// Remove weird task combinations such as publishDebugToReleaseRepository
+afterEvaluate {
+    tasks.withType(PublishToMavenLocal) { task ->
+        if (task.publication.hasProperty('build')
+                && (task.publication.build == 'release'
+                || (task.publication.hasProperty('build')
+                && task.publication.hasProperty('repository')
+                && task.publication.build != task.repository.name))) {
+            task.enabled = false
+            task.group = null
+        }
+    }
+}
+
+task androidJavadocs(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+
+    excludes = ['**/*.md', '**/*.kt'] // < ---- Exclude Markdown and Kotlin files from javadocs
+
+    // don't complain rn
+    if (JavaVersion.current().isJava8Compatible()) {
+        allprojects {
+            tasks.withType(Javadoc) {
+                options.addStringOption('Xdoclint:none', '-quiet')
+            }
+        }
+    }
+}
+
+task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
+    classifier = 'javadoc'
+    from androidJavadocs.destinationDir
+}
+
+task androidSourcesJar(type: Jar) {
+    classifier = 'sources'
+    from android.sourceSets.main.java.sourceFiles
+}
+
+artifacts {
+    archives androidSourcesJar
+    archives androidJavadocsJar
+}

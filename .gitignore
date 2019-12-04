@@ -1,0 +1,73 @@
+# built application files
+*.apk
+*.ap_
+
+# files for the dex VM
+*.dex
+
+# Java class files
+*.class
+
+# generated files
+bin/
+gen/
+out/
+
+# Local configuration file (sdk path, etc)
+/local.properties
+
+# localization asset update script
+ass.sh
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Android Studio
+.gradle
+/build
+proguard/
+*.ipr
+*~
+*.swp
+.navigation/
+/captures
+output.json
+*.log
+.gradle
+/local.properties
+/.idea/workspace.xml
+/.idea/libraries
+
+
+# signing, config, keystores
+.signing/
+*.jks
+google-services.json
+
+# android patch
+gen-external-apklibs
+
+# Intellij
+*.iml
+.idea
+/out/
+
+#NDK
+obj/
+.externalNativeBuild
+
+*/tmp
+*/modules
+*/lib
+*/test-result
+*/logs
+*/obj
+.classpath
+.metadata
+gradle-local.properties

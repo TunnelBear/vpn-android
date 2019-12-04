@@ -1,0 +1,14 @@
+dev tun
+client
+comp-lzo no
+hand-window 30
+remote-cert-tls server
+script-security 0
+auth SHA256
+cipher AES-256-CBC
+auth-user-pass
+route 0.0.0.0 0.0.0.0
+route-ipv6 ::/0
+verb 3
+suppress-timestamps
+ping 10

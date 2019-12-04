@@ -1,0 +1,9 @@
+[submodule "vpn-android/src/main/core/lzo"]
+	path = vpn-android/src/main/core/lzo
+	url = git@github.com:TunnelBear/lzo-android.git
+[submodule "vpn-android/src/main/core/openvpn"]
+	path = vpn-android/src/main/core/openvpn
+	url = git@github.com:TunnelBear/openvpn-android.git
+[submodule "vpn-android/src/main/core/openssl"]
+	path = vpn-android/src/main/core/openssl
+	url = git@github.com:TunnelBear/openssl-android.git
